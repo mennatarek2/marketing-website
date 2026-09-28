@@ -131,22 +131,10 @@
       var pathname = (location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
       var hash = location.hash.toLowerCase();
 
-      /* Determine the single canonical "active href" to highlight.
-         ─────────────────────────────────────────────────────────
-         Special case: /product/ + #modules  →  Features (/product/#modules)
-           • Product must NOT be active at this URL.
-         All other routes: match on pathname only.
-           • A link that carries its own hash (e.g. /product/#modules) must
-             NOT be activated by the pathname alone — it only wins when the
-             current hash also matches. */
-      var wantPath, wantHash;
-      if (pathname === "/product" && hash === "#modules") {
-        wantPath = "/product";
-        wantHash = "#modules";           /* Features wins */
-      } else {
-        wantPath = pathname;
-        wantHash = "";                   /* plain pathname match, no hash */
-      }
+      /* Features is now a top-level route /features/
+         All routes: match on pathname only. */
+      var wantPath = pathname;
+      var wantHash = "";
 
       /* Clear every link, then mark exactly the one(s) that match. */
       navLinks.forEach(function (a) {
