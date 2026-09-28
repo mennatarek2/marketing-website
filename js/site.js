@@ -71,32 +71,64 @@
       });
     });
 
-    /* aria-current for nav — exactly one active item, including hash links */
-    var here = (location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
-    var currentHash = location.hash.toLowerCase();
+    /* ── Active nav-item: exactly one item active at all times ──────────── */
+
+    /* All nav links across both desktop Navbar-links and mobile NavDrawer
+       are collected into ONE NodeList. The active target is calculated once
+       and applied to every matching element so desktop and mobile stay in sync. */
     var navLinks = document.querySelectorAll(".Navbar-links a, .NavDrawer a");
-    var pageLink = null;
-    var hashLink = null;
 
-    navLinks.forEach(function (a) {
-      a.removeAttribute("aria-current");
-      var rawHref = a.getAttribute("href") || "";
-      var parts = rawHref.split("#");
-      var href = parts[0].replace(/\/+$/, "").toLowerCase() || "/";
-      var hash = parts.length > 1 ? "#" + parts[1].toLowerCase() : "";
+    function setActiveNav() {
+      /* Normalise current location.
+         pathname: strip trailing slash  →  "/product", "/", "/local" …
+         hash:     keep as-is (lowercased) →  "#modules" or "" */
+      var pathname = (location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
+      var hash     = location.hash.toLowerCase();
 
-      if (href === here) {
-        if (hash && hash === currentHash) {
-          hashLink = a;
-        } else if (!hash && !pageLink) {
-          pageLink = a;
-        }
+      /* Determine the single canonical "active href" to highlight.
+         ─────────────────────────────────────────────────────────
+         Special case: /product/ + #modules  →  Features (/product/#modules)
+           • Product must NOT be active at this URL.
+         All other routes: match on pathname only.
+           • A link that carries its own hash (e.g. /product/#modules) must
+             NOT be activated by the pathname alone — it only wins when the
+             current hash also matches. */
+      var wantPath, wantHash;
+      if (pathname === "/product" && hash === "#modules") {
+        wantPath = "/product";
+        wantHash = "#modules";           /* Features wins */
+      } else {
+        wantPath = pathname;
+        wantHash = "";                   /* plain pathname match, no hash */
       }
-    });
 
-    /* Features is a section link on Product. When #modules is open, it is
-       the active item; otherwise Product remains the single page-level item. */
-    (hashLink || pageLink)?.setAttribute("aria-current", "page");
+      /* Clear every link, then mark exactly the one(s) that match. */
+      navLinks.forEach(function (a) {
+        a.removeAttribute("aria-current");
+
+        var rawHref  = (a.getAttribute("href") || "").toLowerCase();
+        var parts    = rawHref.split("#");
+        var linkPath = parts[0].replace(/\/+$/, "") || "/";
+        var linkHash = parts.length > 1 ? "#" + parts[1] : "";
+
+        /* A link is active when BOTH its path AND its hash match the
+           desired target — an empty wantHash only matches links with no hash. */
+        if (linkPath === wantPath && linkHash === wantHash) {
+          a.setAttribute("aria-current", "page");
+        }
+      });
+    }
+
+    /* Run immediately on page load */
+    setActiveNav();
+
+    /* Re-run whenever the URL hash changes:
+       covers in-page anchor clicks, Back, and Forward within the same page. */
+    window.addEventListener("hashchange", setActiveNav);
+
+    /* Re-run on popstate:
+       covers Back/Forward across pages in single-page or server-rendered flows. */
+    window.addEventListener("popstate", setActiveNav);
   }
 
   /* ── Reveal on scroll ─────────────────────────────────── */
