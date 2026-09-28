@@ -11,11 +11,11 @@
   try {
     var urlLang = new URLSearchParams(location.search).get("lang");
     lang = urlLang === "ar" || urlLang === "en" ? urlLang : (localStorage.getItem("hm_lang") || "en");
-  } catch (e) {}
+  } catch (e) { }
 
   function applyLang(next) {
     lang = next;
-    try { localStorage.setItem("hm_lang", lang); } catch (e) {}
+    try { localStorage.setItem("hm_lang", lang); } catch (e) { }
     var html = document.documentElement;
     html.setAttribute("lang", lang);
     html.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
@@ -49,22 +49,68 @@
     var btn = document.getElementById("menuBtn");
     var drawer = document.getElementById("navDrawer");
     if (!btn || !drawer) return;
+
+    /* ── aria-controls: tells assistive tech which element the button governs */
+    btn.setAttribute("aria-controls", "navDrawer");
+
+    /* ── Shared open/close helpers ───────────────────────────────────────── */
+
+    function openDrawer() {
+      drawer.classList.add("is-open");
+      btn.setAttribute("aria-expanded", "true");
+      /* Prevent background page scrolling while the drawer is visible */
+      document.body.classList.add("nav-open");
+      /* Move focus into the drawer — first real nav link (skip .btn CTA) */
+      var firstLink = drawer.querySelector("a:not(.btn)");
+      if (firstLink) firstLink.focus();
+    }
+
+    function closeDrawer(returnFocusToBtn) {
+      drawer.classList.remove("is-open");
+      btn.setAttribute("aria-expanded", "false");
+      document.body.classList.remove("nav-open");
+      /* Return focus to the trigger so keyboard users aren't stranded */
+      if (returnFocusToBtn !== false) btn.focus();
+    }
+
+    /* ── Toggle on button click ──────────────────────────────────────────── */
     btn.addEventListener("click", function () {
-      var open = drawer.classList.toggle("is-open");
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    drawer.querySelectorAll("a").forEach(function (a) {
-      a.addEventListener("click", function () {
-        drawer.classList.remove("is-open");
-        btn.setAttribute("aria-expanded", "false");
-      });
-    });
-    document.addEventListener("click", function (e) {
-      if (!drawer.contains(e.target) && !btn.contains(e.target) && drawer.classList.contains("is-open")) {
-        drawer.classList.remove("is-open");
-        btn.setAttribute("aria-expanded", "false");
+      if (drawer.classList.contains("is-open")) {
+        closeDrawer(true);
+      } else {
+        openDrawer();
       }
     });
+
+    /* ── Close when a drawer link is activated ───────────────────────────── */
+    drawer.querySelectorAll("a").forEach(function (a) {
+      a.addEventListener("click", function () {
+        /* Don't steal focus — the browser will navigate; suppress focus-return */
+        closeDrawer(false);
+      });
+    });
+
+    /* ── Escape key: close and return focus to button ────────────────────── */
+    document.addEventListener("keydown", function (e) {
+      if ((e.key === "Escape" || e.key === "Esc") && drawer.classList.contains("is-open")) {
+        e.preventDefault();
+        closeDrawer(true);
+      }
+    });
+
+    /* ── Click outside: close (guard against lang-toggle and btn itself) ─── */
+    document.addEventListener("click", function (e) {
+      if (
+        drawer.classList.contains("is-open") &&
+        !drawer.contains(e.target) &&
+        !btn.contains(e.target)
+      ) {
+        /* Don't return focus — user clicked something else intentionally */
+        closeDrawer(false);
+      }
+    });
+
+    /* ── Language switch ─────────────────────────────────────────────────── */
     document.querySelectorAll("[data-lang-chip]").forEach(function (el) {
       el.addEventListener("click", function () {
         applyLang(lang === "en" ? "ar" : "en");
@@ -83,7 +129,7 @@
          pathname: strip trailing slash  →  "/product", "/", "/local" …
          hash:     keep as-is (lowercased) →  "#modules" or "" */
       var pathname = (location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
-      var hash     = location.hash.toLowerCase();
+      var hash = location.hash.toLowerCase();
 
       /* Determine the single canonical "active href" to highlight.
          ─────────────────────────────────────────────────────────
@@ -106,8 +152,8 @@
       navLinks.forEach(function (a) {
         a.removeAttribute("aria-current");
 
-        var rawHref  = (a.getAttribute("href") || "").toLowerCase();
-        var parts    = rawHref.split("#");
+        var rawHref = (a.getAttribute("href") || "").toLowerCase();
+        var parts = rawHref.split("#");
         var linkPath = parts[0].replace(/\/+$/, "") || "/";
         var linkHash = parts.length > 1 ? "#" + parts[1] : "";
 
@@ -179,30 +225,46 @@
 
   /* ── Workflow stepper ─────────────────────────────────── */
   var WF_STEPS = [
-    { frame: "shift",      who: { en: "Reception", ar: "الاستقبال" },
+    {
+      frame: "shift", who: { en: "Reception", ar: "الاستقبال" },
       t: { en: "Open shift", ar: "فتح الوردية" },
-      d: { en: "The day starts with a counted cash float. Every payment that follows is tied to this shift — nothing floats unaccounted.", ar: "يبدأ اليوم بعدّ نقطة بداية نقدية. كل دفعة بعدها مرتبطة بهذه الوردية — لا مباليد غير محسوبة." } },
-    { frame: "addMember",  who: { en: "Reception", ar: "الاستقبال" },
+      d: { en: "The day starts with a counted cash float. Every payment that follows is tied to this shift — nothing floats unaccounted.", ar: "يبدأ اليوم بعدّ نقطة بداية نقدية. كل دفعة بعدها مرتبطة بهذه الوردية — لا مباليد غير محسوبة." }
+    },
+    {
+      frame: "addMember", who: { en: "Reception", ar: "الاستقبال" },
       t: { en: "Add member", ar: "إضافة عضو" },
-      d: { en: "Name and phone is enough to start. The profile lives in the system from minute one — not in a notebook by the door.", ar: "الاسم والرقم يكفيان للبدء. الملف يعيش في النظام من أول لحظة — مش في دفتر عند الباب." } },
-    { frame: "membership", who: { en: "Reception", ar: "الاستقبال" },
+      d: { en: "Name and phone is enough to start. The profile lives in the system from minute one — not in a notebook by the door.", ar: "الاسم والرقم يكفيان للبدء. الملف يعيش في النظام من أول لحظة — مش في دفتر عند الباب." }
+    },
+    {
+      frame: "membership", who: { en: "Reception", ar: "الاستقبال" },
       t: { en: "Create membership", ar: "إنشاء اشتراك" },
-      d: { en: "Pick a plan from the gym's own catalog. Prices, durations, and what's included are defined by the gym.", ar: "اختر خطة من كتالوج الصالة نفسها. الأسعار والمدد والمحتوى تحددها الصالة." } },
-    { frame: "payment",    who: { en: "Reception", ar: "الاستقبال" },
+      d: { en: "Pick a plan from the gym's own catalog. Prices, durations, and what's included are defined by the gym.", ar: "اختر خطة من كتالوج الصالة نفسها. الأسعار والمدد والمحتوى تحددها الصالة." }
+    },
+    {
+      frame: "payment", who: { en: "Reception", ar: "الاستقبال" },
       t: { en: "Collect payment", ar: "تحصيل الدفعة" },
-      d: { en: "Cash or card — the invoice is numbered automatically and lands on the open shift's cash summary.", ar: "كاش أو بطاقة — الفاتورة تأخذ رقمها تلقائياً وتُسجَّل على ملخص وردية الصندوق المفتوحة." } },
-    { frame: "card",       who: { en: "Reception", ar: "الاستقبال" },
+      d: { en: "Cash or card — the invoice is numbered automatically and lands on the open shift's cash summary.", ar: "كاش أو بطاقة — الفاتورة تأخذ رقمها تلقائياً وتُسجَّل على ملخص وردية الصندوق المفتوحة." }
+    },
+    {
+      frame: "card", who: { en: "Reception", ar: "الاستقبال" },
       t: { en: "Issue member card", ar: "إصدار كارت العضو" },
-      d: { en: "Print a gym-branded PVC card with its barcode. From now on, check-in is one scan away.", ar: "اطبع كارت PVC بهوية الصالة ومعه باركود. من هنا، حضور العضو مسح واحدة." } },
-    { frame: "attendance", who: { en: "Front desk", ar: "مكتب الاستقبال" },
+      d: { en: "Print a gym-branded PVC card with its barcode. From now on, check-in is one scan away.", ar: "اطبع كارت PVC بهوية الصالة ومعه باركود. من هنا، حضور العضو مسح واحدة." }
+    },
+    {
+      frame: "attendance", who: { en: "Front desk", ar: "مكتب الاستقبال" },
       t: { en: "Check-in", ar: "تسجيل حضور" },
-      d: { en: "Card, QR, barcode, manual, or biometric — every method feeds the same attendance record.", ar: "كارت أو QR أو باركود أو يدوي أو بصمة — كل طريقة تغذي نفس سجل الحضور." } },
-    { frame: "sales",      who: { en: "Reception", ar: "الاستقبال" },
+      d: { en: "Card, QR, barcode, manual, or biometric — every method feeds the same attendance record.", ar: "كارت أو QR أو باركود أو يدوي أو بصمة — كل طريقة تغذي نفس سجل الحضور." }
+    },
+    {
+      frame: "sales", who: { en: "Reception", ar: "الاستقبال" },
       t: { en: "Track the sale", ar: "تتبع البيع" },
-      d: { en: "Memberships, products, and invoices in one sale record — stock included, receipt printed.", ar: "اشتراكات ومنتجات وفواتير في سجل بيع واحد — مع تحديث المخزون وطبع الإيصال." } },
-    { frame: "owner",      who: { en: "Owner", ar: "المالك" },
+      d: { en: "Memberships, products, and invoices in one sale record — stock included, receipt printed.", ar: "اشتراكات ومنتجات وفواتير في سجل بيع واحد — مع تحديث المخزون وطبع الإيصال." }
+    },
+    {
+      frame: "owner", who: { en: "Owner", ar: "المالك" },
       t: { en: "Owner sees activity", ar: "المالك يرى النشاط" },
-      d: { en: "At any moment, the owner dashboard shows today's sales, members, check-ins, and shift state — from any device on the gym network.", ar: "في أي لحظة، تعرض لوحة المالك مبيعات اليوم والأعضاء والحضور وحالة الوردية — من أي جهاز على شبكة الصالة." } }
+      d: { en: "At any moment, the owner dashboard shows today's sales, members, check-ins, and shift state — from any device on the gym network.", ar: "في أي لحظة، تعرض لوحة المالك مبيعات اليوم والأعضاء والحضور وحالة الوردية — من أي جهاز على شبكة الصالة." }
+    }
   ];
 
   function initWorkflow() {

@@ -55,6 +55,8 @@ body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
+/* Scroll-lock while the mobile nav drawer is open */
+body.nav-open { overflow: hidden; }
 img, svg { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; }
@@ -185,6 +187,7 @@ p { color: var(--lts); }
   color: var(--c200); font-weight: 600; border-bottom: 1px solid var(--c800);
 }
 .NavDrawer a:hover { color: var(--l400); }
+.NavDrawer a[aria-current="page"] { color: var(--l400); }
 .NavDrawer .btn { margin-top: 14px; justify-content: center; border-bottom: 0; }
 
 /* ── Hero ───────────────────────────────────────────────── */
@@ -506,7 +509,7 @@ p { color: var(--lts); }
   display: flex; align-items: center; justify-content: center;
   background: var(--c900); color: var(--l400);
 }
-.role-card .head b { display: block; font-size: 1.02rem; }
+.role-card .head b { display: block; font-size: 1.02rem; color: var(--c900); }
 .role-card .head span { font-size: .78rem; color: var(--ltt); font-weight: 700; }
 .role-card ul { display: grid; gap: 7px; }
 .role-card li {
