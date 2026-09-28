@@ -70,12 +70,33 @@
         applyLang(lang === "en" ? "ar" : "en");
       });
     });
-    /* aria-current for nav — clean-URL aware */
+
+    /* aria-current for nav — exactly one active item, including hash links */
     var here = (location.pathname.replace(/\/+$/, "") || "/").toLowerCase();
-    document.querySelectorAll(".Navbar-links a, .NavDrawer a").forEach(function (a) {
-      var href = (a.getAttribute("href") || "").split("#")[0].replace(/\/+$/, "");
-      if (href === here) a.setAttribute("aria-current", "page");
+    var currentHash = location.hash.toLowerCase();
+    var navLinks = document.querySelectorAll(".Navbar-links a, .NavDrawer a");
+    var pageLink = null;
+    var hashLink = null;
+
+    navLinks.forEach(function (a) {
+      a.removeAttribute("aria-current");
+      var rawHref = a.getAttribute("href") || "";
+      var parts = rawHref.split("#");
+      var href = parts[0].replace(/\/+$/, "").toLowerCase() || "/";
+      var hash = parts.length > 1 ? "#" + parts[1].toLowerCase() : "";
+
+      if (href === here) {
+        if (hash && hash === currentHash) {
+          hashLink = a;
+        } else if (!hash && !pageLink) {
+          pageLink = a;
+        }
+      }
     });
+
+    /* Features is a section link on Product. When #modules is open, it is
+       the active item; otherwise Product remains the single page-level item. */
+    (hashLink || pageLink)?.setAttribute("aria-current", "page");
   }
 
   /* ── Reveal on scroll ─────────────────────────────────── */
